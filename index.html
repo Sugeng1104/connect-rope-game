@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Connect Rope — 11 Level</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#111827; --ink:#e5e7eb; --muted:#9ca3af;
+    --accent:#22c55e; --warn:#ef4444; --brand:#06b6d4; --gold:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:linear-gradient(180deg,#0b1220 0%,#0f172a 100%);
+    color:var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .app{width:min(1200px,96vw); min-height:92vh; background:rgba(17,24,39,.88); border:1px solid #1f2937; border-radius:16px; box-shadow: 0 30px 80px rgba(0,0,0,.35); overflow:hidden; display:flex; flex-direction:column}
+  header{
+    padding:10px 14px; border-bottom:1px solid #1f2937; display:flex; align-items:center; gap:10px; background:rgba(2,6,23,.6);
+    position:sticky; top:0; z-index:5;
+  }
+  header .title{font-weight:800; letter-spacing:.4px}
+  header .pill{background:rgba(6,182,212,.08); color:#67e8f9; border:1px solid rgba(6,182,212,.35); padding:6px 10px; border-radius:999px; font-size:.85rem}
+  header .pill.alt{background:rgba(245,158,11,.08); color:#fbbf24; border-color:rgba(245,158,11,.35)}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  .spacer{flex:1}
+  main{flex:1; display:flex; overflow:auto}
+  section{flex:1; padding:18px; display:none}
+  section.active{display:block}
+  .grid{display:grid; grid-template-columns: 1.25fr 1fr; gap:18px}
+  .card{background:rgba(2,6,23,.6); border:1px solid #1f2937; border-radius:14px; padding:16px}
+  h1,h2,h3{margin:.2rem 0 .8rem}
+  .muted{color:var(--muted)}
+  .badge{padding:4px 8px; border-radius:7px; background:#0b1220; border:1px solid #1f2937; color:#93c5fd; font-size:.85rem}
+  .btn{
+    background:linear-gradient(180deg,#22c55e,#16a34a); border:1px solid #166534; color:white;
+    padding:10px 14px; border-radius:10px; font-weight:700; cursor:pointer; transition:.15s;
+  }
+  .btn:hover{filter:brightness(1.05)}
+  .btn.secondary{background:linear-gradient(180deg,#0ea5e9,#0284c7); border-color:#075985}
+  .btn.ghost{background:transparent; border:1px solid #374151; color:#e5e7eb}
+  .btn.warn{background:linear-gradient(180deg,#ef4444,#b91c1c); border-color:#7f1d1d}
+  .name-input, .text-input{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid #334155; background:#0b1220; color:#e5e7eb }
+  .select{width:100%; padding:10px 12px; border-radius:10px; border:1px solid #334155; background:#0b1220; color:#e5e7eb}
+  canvas.board{width:100%; height:auto; background:#0b1220; border:1px solid #334155; border-radius:12px}
+  .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:10px; border:1px dashed #334155; border-radius:12px; background:rgba(2,6,23,.4); margin-top:10px}
+  .stars{display:flex; gap:4px; align-items:center}
+  .star{width:22px; height:22px; color:#fbbf24; filter: drop-shadow(0 0 4px rgba(251,191,36,.35))}
+  .footer{padding:10px 18px; border-top:1px solid #1f2937; display:flex; gap:10px; align-items:center; background:rgba(2,6,23,.6)}
+  .example{display:flex; gap:14px; align-items:center}
+  .example canvas{background:#0b1220; border:1px solid #334155; border-radius:12px}
+
+  /* Cute animal + FX layers */
+  .stage{position:relative; min-height:120px}
+  .animal, .fx, .watermelon, .durian{position:absolute; inset:auto 0 0 0; pointer-events:none}
+  .animal{height:120px; display:flex; justify-content:center; align-items:flex-end}
+  .animal svg{height:110px}
+  .think{position:absolute; left:50%; transform:translateX(-50%); top:2px; opacity:.9}
+  .floating{animation:float 3s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translate(-50%,0)} 50%{transform:translate(-50%,-8px)}}
+  .bob{animation:bob 0.9s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)}}
+  .drop{animation:drop 0.8s cubic-bezier(.3,.9,.4,1.2) forwards}
+  @keyframes drop{0%{transform:translateY(-260px) rotate(-20deg)} 80%{transform:translateY(-10px)} 100%{transform:translateY(0)}}
+  .jump{animation:jump 0.8s ease-out 1}
+  @keyframes jump{0%{transform:translateY(0)} 40%{transform:translateY(-40px)} 100%{transform:translateY(0)}}
+  .pulse{animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.9} 50%{opacity:.5}}
+  .hidden{display:none !important}
+
+  /* Chat */
+  .chat-box{display:flex; flex-direction:column; height:360px; border:1px solid #334155; border-radius:12px; overflow:hidden; background:#0b1220}
+  .chat-messages{flex:1; overflow:auto; padding:10px}
+  .bubble{max-width:80%; margin:6px 0; padding:8px 10px; border-radius:10px; line-height:1.2}
+  .me{background:#064e3b; color:#d1fae5; align-self:flex-end; border-top-right-radius:4px}
+  .other{background:#1f2937; color:#e5e7eb; align-self:flex-start; border-top-left-radius:4px}
+  .meta{font-size:.75rem; color:#93c5fd}
+  .chat-input{display:flex; gap:8px; padding:8px; border-top:1px solid #334155; background:#0b1220}
+  .watermark{font-size:.8rem; color:#94a3b8; text-align:right; margin-top:6px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="title">🎮 Connect Rope — 11 Level</div>
+    <span class="pill alt">Pencipta: <b>Sugeng Hidayat</b></span>
+    <div class="spacer"></div>
+    <div id="playerTag" class="pill">Pemain: <span id="playerNameTag">-</span></div>
+  </header>
+  <main>
+    <!-- PAGE 1: HOME -->
+    <section id="home" class="active">
+      <div class="grid">
+        <div class="card">
+          <h2>Selamat datang!</h2>
+          <p><b>Tujuan:</b> Sambungkan <b>titik berpasangan</b> dengan tali (garis) <b>tanpa saling menumpuk</b> dan hanya lewat jalur <b>atas–bawah–kiri–kanan</b> (tidak diagonal).</p>
+          <ul>
+            <li>Mulai dari salah satu titik berwarna, tarik ke pasangannya.</li>
+            <li>Tali tidak boleh melewati sel yang sudah dipakai tali lain.</li>
+            <li><b>Hint</b> (1 klik) akan <b>menyelesaikan seluruh level</b> — bintang berkurang 1.</li>
+            <li>Tekan <b>Reset</b> untuk mengulang level.</li>
+          </ul>
+          <div class="example">
+            <canvas id="exampleCanvas" width="240" height="160"></canvas>
+            <div>
+              <div class="badge">Contoh Penyambungan</div>
+              <p class="muted" style="max-width:28ch">Tarik garis dari titik merah ke titik merah lain.</p>
+              <button id="btnStart" class="btn">▶️ Mainkan</button>
+              <div class="watermark">Diciptakan oleh <b>Sugeng Hidayat</b></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Fitur</h3>
+          <ul>
+            <li>11 level bertahap</li>
+            <li><b>Hint 1 klik</b> langsung menuntaskan 1 level</li>
+            <li>Multi-User: dukung banyak pemain</li>
+            <li>Chat internal (antar-tab perangkat yang sama)</li>
+            <li>Efek suara + musik latar</li>
+            <li>Animasi hewan lucu (berpikir, kalah durian, menang semangka)</li>
+            <li>Unduh hasil permainan (.json)</li>
+          </ul>
+          <div class="watermark">Pencipta: <b>Sugeng Hidayat</b></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 2: MULTI-USER / PROFILE -->
+    <section id="profile">
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <div class="card">
+          <h2>Tambah Pemain Baru</h2>
+          <p>Masukkan nama pemain baru. Game ini mendukung banyak pemain.</p>
+          <input id="playerName" class="name-input" type="text" placeholder="Nama pemain baru..." />
+          <div class="row" style="margin-top:10px">
+            <button id="btnSaveProfile" class="btn secondary">💾 Simpan Pemain</button>
+            <button id="btnSkip" class="btn ghost">Lewati</button>
+          </div>
+          <p class="muted">Nama aktif akan tampil di pojok kanan atas.</p>
+          <div class="watermark">Dibuat oleh <b>Sugeng Hidayat</b></div>
+        </div>
+        <div class="card">
+          <h3>Pilih Pemain Aktif</h3>
+          <select id="playerSelect" class="select"></select>
+          <div class="row" style="margin-top:10px">
+            <button id="btnUseSelected" class="btn">Gunakan</button>
+            <button id="btnDeleteSelected" class="btn warn">Hapus</button>
+          </div>
+          <p id="playerCount" class="muted" style="margin-top:8px">Total pemain: 0</p>
+          <hr style="border-color:#1f2937; margin:12px 0" />
+          <div class="row">
+            <button id="btnGoGame" class="btn ghost">➡️ Masuk Permainan</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 3: GAME -->
+    <section id="game">
+      <div class="grid">
+        <div class="card">
+          <div class="row" style="justify-content:space-between; align-items:center">
+            <div class="row">
+              <span class="badge">Level: <span id="levelNo">1</span>/11</span>
+              <span id="starsWrap" class="stars" aria-label="Bintang"></span>
+              <span id="statusText" class="muted">Tarik tali untuk menyambungkan titik.</span>
+            </div>
+            <button id="btnMusic" class="btn ghost">🔈 Nyalakan Musik</button>
+          </div>
+
+          <div style="margin-top:10px">
+            <canvas id="board" class="board" width="700" height="700"></canvas>
+            <div class="watermark">Pencipta: <b>Sugeng Hidayat</b></div>
+          </div>
+
+          <div class="toolbar">
+            <button id="btnHint" class="btn">💡 Hint (Selesaikan Level)</button>
+            <button id="btnReset" class="btn warn">⟲ Reset</button>
+            <button id="btnCheck" class="btn ghost">✔️ Cek Jawaban</button>
+            <div class="spacer"></div>
+            <button id="btnDownload" class="btn ghost">⬇️ Unduh Hasil</button>
+            <button id="btnNext" class="btn secondary hidden">Lanjut ▶️</button>
+          </div>
+
+          <div class="stage" aria-hidden="true">
+            <!-- Animal -->
+            <div class="animal" id="animal">
+              <!-- Cute animal (bunny) -->
+              <svg viewBox="0 0 220 200" fill="none">
+                <ellipse cx="70" cy="50" rx="20" ry="38" fill="#fde68a" stroke="#374151" stroke-width="3"/>
+                <ellipse cx="150" cy="50" rx="20" ry="38" fill="#fde68a" stroke="#374151" stroke-width="3"/>
+                <circle cx="110" cy="95" r="55" fill="#fef3c7" stroke="#374151" stroke-width="3"/>
+                <circle cx="90" cy="95" r="6" fill="#111827"/>
+                <circle cx="130" cy="95" r="6" fill="#111827"/>
+                <circle cx="110" cy="110" r="4" fill="#e11d48"/>
+                <path d="M100 120 Q110 126 120 120" stroke="#374151" stroke-width="3" stroke-linecap="round" fill="none"/>
+                <ellipse cx="110" cy="165" rx="46" ry="25" fill="#fde68a" stroke="#374151" stroke-width="3"/>
+              </svg>
+              <div class="think floating pulse" id="thinkBubble">
+                <svg width="140" height="70" viewBox="0 0 140 70">
+                  <ellipse cx="70" cy="35" rx="62" ry="26" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2"/>
+                  <circle cx="28" cy="60" r="6" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2"/>
+                  <circle cx="16" cy="66" r="4" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2"/>
+                  <text x="70" y="41" text-anchor="middle" font-size="16" fill="#0369a1" font-family="sans-serif">hmm...</text>
+                </svg>
+              </div>
+            </div>
+            <div class="fx">
+              <!-- Durian (lose) -->
+              <div id="durianFx" class="durian hidden">
+                <div style="display:flex; justify-content:center; transform:translateY(-220px)">
+                  <svg class="drop" width="120" height="140" viewBox="0 0 120 140">
+                    <defs><filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity=".5"/></filter></defs>
+                    <ellipse cx="60" cy="72" rx="44" ry="52" fill="#166534" stroke="#052e16" stroke-width="5" filter="url(#sh)"/>
+                    <g fill="#14532d"><circle cx="30" cy="70" r="6"/><circle cx="45" cy="50" r="6"/><circle cx="75" cy="50" r="6"/><circle cx="90" cy="70" r="6"/><circle cx="60" cy="95" r="6"/></g>
+                    <rect x="56" y="18" width="8" height="18" fill="#713f12"/>
+                  </svg>
+                </div>
+              </div>
+              <!-- Watermelon (win) -->
+              <div id="watermelonFx" class="watermelon hidden">
+                <div style="display:flex; gap:20px; justify-content:center">
+                  <svg class="bob" width="140" height="110" viewBox="0 0 140 110">
+                    <defs><linearGradient id="wm" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#065f46"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs>
+                    <path d="M10,100 Q70,20 130,100" fill="url(#wm)" stroke="#064e3b" stroke-width="6"/>
+                    <path d="M20,96 Q70,36 120,96" fill="#f43f5e" stroke="#991b1b" stroke-width="4"/>
+                    <g fill="#111827"><ellipse cx="55" cy="70" rx="3" ry="6"/><ellipse cx="80" cy="70" rx="3" ry="6"/><ellipse cx="68" cy="58" rx="3" ry="6"/></g>
+                  </svg>
+                  <svg class="bob" width="140" height="110" viewBox="0 0 140 110" style="transform:scaleX(-1)">
+                    <defs><linearGradient id="wmr" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#065f46"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs>
+                    <path d="M10,100 Q70,20 130,100" fill="url(#wmr)" stroke="#064e3b" stroke-width="6"/>
+                    <path d="M20,96 Q70,36 120,96" fill="#f43f5e" stroke="#991b1b" stroke-width="4"/>
+                    <g fill="#111827"><ellipse cx="55" cy="70" rx="3" ry="6"/><ellipse cx="80" cy="70" rx="3" ry="6"/><ellipse cx="68" cy="58" rx="3" ry="6"/></g>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: CHAT + HELP -->
+        <div class="card">
+          <h3>Percakapan</h3>
+          <div class="chat-box">
+            <div id="chatMessages" class="chat-messages"></div>
+            <div class="chat-input">
+              <input id="chatText" class="text-input" type="text" placeholder="Tulis pesan..." />
+              <button id="btnSendChat" class="btn secondary">Kirim</button>
+            </div>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button id="btnClearChat" class="btn ghost">Hapus Chat</button>
+            <span class="muted">Catatan: Chat ini sinkron antar-tab <b>pada perangkat yang sama</b> (localStorage). Untuk lintas perangkat, gunakan Firebase/Socket.IO.</span>
+          </div>
+
+          <hr style="border-color:#1f2937; margin:14px 0" />
+          <h3>Catatan & Bantuan</h3>
+          <ol>
+            <li>Klik & tarik dari titik berwarna ke pasangannya (ortogonal saja).</li>
+            <li>Setiap sel hanya boleh dipakai satu warna.</li>
+            <li><b>Hint</b> akan menyelesaikan <b>seluruh level</b> sekaligus (bintang -1).</li>
+          </ol>
+          <p class="muted">Jika suara tak terdengar, klik <b>Nyalakan Musik</b> dahulu.</p>
+          <div class="watermark">Diciptakan oleh <b>Sugeng Hidayat</b></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="footer">
+    <span class="muted">© 2026 — Connect Rope (Sederhana). Dibuat untuk latihan logika.</span>
+    <div class="spacer"></div>
+    <button id="btnGoHome" class="btn ghost">🏠 Beranda</button>
+  </div>
+</div>
+
+<script>
+/* ========= UTILS ========= */
+const $  = (sel)=>document.querySelector(sel);
+const $$ = (sel)=>document.querySelectorAll(sel);
+const PAGES = { home: $('#home'), profile: $('#profile'), game: $('#game') };
+function showPage(id){ Object.values(PAGES).forEach(s=>s.classList.remove('active')); PAGES[id].classList.add('active'); }
+
+const playerNameInput = $('#playerName');
+const playerNameTag   = $('#playerNameTag');
+const playerTag       = $('#playerTag');
+const playerSelect    = $('#playerSelect');
+const playerCountEl   = $('#playerCount');
+
+const board = $('#board');
+const ctx = board.getContext('2d');
+const ex = $('#exampleCanvas');
+const exctx = ex.getContext('2d');
+
+const statusText = $('#statusText');
+const levelNoEl  = $('#levelNo');
+const starsWrap  = $('#starsWrap');
+
+const btnStart   = $('#btnStart');
+const btnSaveProfile = $('#btnSaveProfile');
+const btnSkip    = $('#btnSkip');
+const btnUseSelected = $('#btnUseSelected');
+const btnDeleteSelected = $('#btnDeleteSelected');
+const btnGoGame  = $('#btnGoGame');
+
+const btnHint    = $('#btnHint');
+const btnReset   = $('#btnReset');
+const btnCheck   = $('#btnCheck');
+const btnNext    = $('#btnNext');
+const btnDownload= $('#btnDownload');
+const btnGoHome  = $('#btnGoHome');
+const btnMusic   = $('#btnMusic');
+
+const chatMessages = $('#chatMessages');
+const chatText     = $('#chatText');
+const btnSendChat  = $('#btnSendChat');
+const btnClearChat = $('#btnClearChat');
+
+const durianFx = $('#durianFx');
+const watermelonFx = $('#watermelonFx');
+const animalEl = $('#animal');
+const thinkBubble = $('#thinkBubble');
+
+/* Players */
+let PLAYERS = [];
+let ACTIVE  = null;
+
+/* Colors */
+const COLORS = ['#ef4444','#3b82f6','#22c55e','#a855f7','#eab308','#ec4899','#6366f1','#14b8a6'];
+
+/* ========= LEVELS ========= */
+const LEVELS = [
+  { size:5, pairs:[
+    {color:COLORS[0], a:[0,0], b:[0,4], path:[[0,0],[0,1],[0,2],[0,3],[0,4]]},
+    {color:COLORS[1], a:[2,0], b:[2,4], path:[[2,0],[2,1],[2,2],[2,3],[2,4]]},
+    {color:COLORS[2], a:[4,0], b:[4,4], path:[[4,0],[4,1],[4,2],[4,3],[4,4]]},
+  ]},
+  { size:5, pairs:[
+    {color:COLORS[0], a:[0,0], b:[4,0], path:[[0,0],[1,0],[2,0],[3,0],[4,0]]},
+    {color:COLORS[1], a:[0,4], b:[4,4], path:[[0,4],[1,4],[2,4],[3,4],[4,4]]},
+    {color:COLORS[2], a:[2,1], b:[2,3], path:[[2,1],[2,2],[2,3]]},
+  ]},
+  { size:5, pairs:[
+    {color:COLORS[0], a:[0,0], b:[4,0], path:[[0,0],[1,0],[2,0],[3,0],[4,0]]},
+    {color:COLORS[1], a:[0,2], b:[4,2], path:[[0,2],[1,2],[2,2],[3,2],[4,2]]},
+    {color:COLORS[2], a:[0,4], b:[4,4], path:[[0,4],[1,4],[2,4],[3,4],[4,4]]},
+  ]},
+  { size:6, pairs:[
+    {color:COLORS[0], a:[0,0], b:[5,0], path:[[0,0],[1,0],[2,0],[3,0],[4,0],[5,0]]},
+    {color:COLORS[1], a:[0,2], b:[5,2], path:[[0,2],[1,2],[2,2],[3,2],[4,2],[5,2]]},
+    {color:COLORS[2], a:[0,3], b:[5,3], path:[[0,3],[1,3],[2,3],[3,3],[4,3],[5,3]]},
+    {color:COLORS[3], a:[0,5], b:[5,5], path:[[0,5],[1,5],[2,5],[3,5],[4,5],[5,5]]},
+  ]},
+  { size:6, pairs:[
+    {color:COLORS[0], a:[0,0], b:[0,5], path:[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5]]},
+    {color:COLORS[1], a:[2,0], b:[2,5], path:[[2,0],[2,1],[2,2],[2,3],[2,4],[2,5]]},
+    {color:COLORS[2], a:[4,0], b:[4,5], path:[[4,0],[4,1],[4,2],[4,3],[4,4],[4,5]]},
+    {color:COLORS[3], a:[5,0], b:[5,5], path:[[5,0],[5,1],[5,2],[5,3],[5,4],[5,5]]},
+  ]},
+  { size:6, pairs:[
+    {color:COLORS[0], a:[0,0], b:[2,2], path:[[0,0],[0,1],[0,2],[1,2],[2,2]]},
+    {color:COLORS[1], a:[5,0], b:[3,2], path:[[5,0],[5,1],[5,2],[4,2],[3,2]]},
+    {color:COLORS[2], a:[0,5], b:[2,3], path:[[0,5],[1,5],[2,5],[2,4],[2,3]]},
+    {color:COLORS[3], a:[5,5], b:[3,3], path:[[5,5],[4,5],[3,5],[3,4],[3,3]]},
+  ]},
+  { size:6, pairs:[
+    {color:COLORS[0], a:[0,1], b:[2,3], path:[[0,1],[1,1],[2,1],[2,2],[2,3]]},
+    {color:COLORS[1], a:[5,1], b:[3,3], path:[[5,1],[4,1],[3,1],[3,2],[3,3]]},
+    {color:COLORS[2], a:[0,4], b:[2,2], path:[[0,4],[1,4],[2,4],[2,3],[2,2]]},
+    {color:COLORS[3], a:[5,4], b:[3,2], path:[[5,4],[4,4],[3,4],[3,3],[3,2]]},
+  ]},
+  { size:7, pairs:[
+    {color:COLORS[0], a:[0,0], b:[2,2], path:[[0,0],[1,0],[2,0],[2,1],[2,2]]},
+    {color:COLORS[1], a:[6,0], b:[4,2], path:[[6,0],[5,0],[4,0],[4,1],[4,2]]},
+    {color:COLORS[2], a:[0,6], b:[2,4], path:[[0,6],[1,6],[2,6],[2,5],[2,4]]},
+    {color:COLORS[3], a:[6,6], b:[4,4], path:[[6,6],[5,6],[4,6],[4,5],[4,4]]},
+    {color:COLORS[4], a:[1,3], b:[5,3], path:[[1,3],[2,3],[3,3],[4,3],[5,3]]},
+  ]},
+  { size:7, pairs:[
+    {color:COLORS[0], a:[0,1], b:[3,1], path:[[0,1],[1,1],[2,1],[3,1]]},
+    {color:COLORS[1], a:[6,1], b:[3,2], path:[[6,1],[5,1],[4,1],[3,1],[3,2]]},
+    {color:COLORS[2], a:[0,5], b:[3,4], path:[[0,5],[1,5],[2,5],[3,5],[3,4]]},
+    {color:COLORS[3], a:[6,5], b:[3,4], path:[[6,5],[5,5],[4,5],[3,5],[3,4]]},
+    {color:COLORS[4], a:[3,0], b:[3,6], path:[[3,0],[3,1],[3,2],[3,3],[3,4],[3,5],[3,6]]},
+  ]},
+  { size:7, pairs:[
+    {color:COLORS[0], a:[0,2], b:[6,2], path:[[0,2],[1,2],[2,2],[3,2],[4,2],[5,2],[6,2]]},
+    {color:COLORS[1], a:[0,4], b:[6,4], path:[[0,4],[1,4],[2,4],[3,4],[4,4],[5,4],[6,4]]},
+    {color:COLORS[2], a:[1,0], b:[1,6], path:[[1,0],[1,1],[1,2],[1,3],[1,4],[1,5],[1,6]]},
+    {color:COLORS[3], a:[5,0], b:[5,6], path:[[5,0],[5,1],[5,2],[5,3],[5,4],[5,5],[5,6]]},
+  ]},
+  { size:8, pairs:[
+    {color:COLORS[0], a:[0,0], b:[7,0], path:[[0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0]]},
+    {color:COLORS[1], a:[0,7], b:[7,7], path:[[0,7],[1,7],[2,7],[3,7],[4,7],[5,7],[6,7],[7,7]]},
+    {color:COLORS[2], a:[0,3], b:[7,3], path:[[0,3],[1,3],[2,3],[3,3],[4,3],[5,3],[6,3],[7,3]]},
+    {color:COLORS[3], a:[0,4], b:[7,4], path:[[0,4],[1,4],[2,4],[3,4],[4,4],[5,4],[6,4],[7,4]]},
+    {color:COLORS[4], a:[2,1], b:[2,6], path:[[2,1],[2,2],[2,3],[2,4],[2,5],[2,6]]},
+    {color:COLORS[5], a:[5,1], b:[5,6], path:[[5,1],[5,2],[5,3],[5,4],[5,5],[5,6]]},
+  ]},
+];
+
+let GAME = {
+  currentLevel: 0, stars: 5, gridSize: 5,
+  cellSize: 100, origin: {x:40,y:40},
+  endpoints: {}, occ: [], paths: {}, dragging: null,
+  completedColors: new Set(), results: [], startTime: 0,
+  audioReady:false
+};
+
+function renderStars(){
+  starsWrap.innerHTML = '';
+  for(let i=0;i<5;i++){
+    const filled = i < GAME.stars;
+    const s = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    s.setAttribute('viewBox','0 0 24 24');
+    s.className='star';
+    s.innerHTML = `<path d="M12 2l3.09 6.26 6.91.99-5 4.87L18.18 22 12 18.9 5.82 22l1.18-7.88-5-4.87 6.91-.99L12 2z" fill="${filled?'#fbbf24':'#334155'}" stroke="#1f2937" stroke-width="1"/>`;
+    starsWrap.appendChild(s);
+  }
+}
+
+function toPixel(x,y){ return { x: GAME.origin.x + x*GAME.cellSize, y: GAME.origin.y + y*GAME.cellSize }; }
+function toCell(px,py){ const x=Math.round((px-GAME.origin.x)/GAME.cellSize), y=Math.round((py-GAME.origin.y)/GAME.cellSize); return {x,y}; }
+function inBounds(x,y){ return x>=0 && y>=0 && x<GAME.gridSize && y<GAME.gridSize; }
+
+function drawBoard(){
+  const W = board.width, H = board.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#0b1220'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle = '#1f2937'; ctx.lineWidth = 2;
+  for(let i=0;i<GAME.gridSize;i++){
+    const y = GAME.origin.y + i*GAME.cellSize;
+    ctx.beginPath(); ctx.moveTo(GAME.origin.x, y); ctx.lineTo(GAME.origin.x+(GAME.gridSize-1)*GAME.cellSize, y); ctx.stroke();
+    const x = GAME.origin.x + i*GAME.cellSize;
+    ctx.beginPath(); ctx.moveTo(x, GAME.origin.y); ctx.lineTo(x, GAME.origin.y+(GAME.gridSize-1)*GAME.cellSize); ctx.stroke();
+  }
+  for(const [color, path] of Object.entries(GAME.paths)){
+    if(!path || path.length<2) continue;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(8, GAME.cellSize*0.18);
+    ctx.lineCap = 'round'; ctx.lineJoin='round';
+    ctx.beginPath();
+    for(let i=0;i<path.length;i++){
+      const {x,y} = toPixel(path[i][0], path[i][1]);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+  for(const [key, info] of Object.entries(GAME.endpoints)){
+    const [xs,ys] = key.split(','); const x=+xs, y=+ys;
+    const p = toPixel(x,y);
+    ctx.beginPath();
+    ctx.fillStyle = info.color; ctx.strokeStyle = '#111827'; ctx.lineWidth = 3;
+    ctx.arc(p.x, p.y, Math.max(10, GAME.cellSize*0.22), 0, Math.PI*2);
+    ctx.fill(); ctx.stroke();
+  }
+}
+
+function initLevel(idx){
+  GAME.currentLevel = idx;
+  const L = LEVELS[idx];
+  GAME.gridSize = L.size;
+  const usable = Math.min(board.width-80, board.height-80);
+  GAME.cellSize = Math.floor(usable/(GAME.gridSize-1));
+  const padX = Math.floor((board.width - (GAME.cellSize*(GAME.gridSize-1)))/2);
+  const padY = Math.floor((board.height - (GAME.cellSize*(GAME.gridSize-1)))/2);
+  GAME.origin = {x:padX, y:padY};
+
+  GAME.endpoints = {};
+  GAME.paths = {};
+  GAME.completedColors.clear();
+  GAME.occ = Array.from({length:GAME.gridSize}, ()=>Array(GAME.gridSize).fill(null));
+  GAME.stars = 5;
+  GAME.startTime = Date.now();
+
+  L.pairs.forEach((p,pi)=>{
+    const keyA = p.a.join(','), keyB = p.b.join(',');
+    GAME.endpoints[keyA] = {color:p.color, pairIndex:pi, end:'a'};
+    GAME.endpoints[keyB] = {color:p.color, pairIndex:pi, end:'b'};
+    GAME.paths[p.color] = [p.a];
+    GAME.occ[p.a[1]][p.a[0]] = p.color;
+    GAME.occ[p.b[1]][p.b[0]] = p.color;
+  });
+
+  levelNoEl.textContent = (idx+1);
+  renderStars();
+  statusText.textContent = 'Tarik tali untuk menyambungkan titik.';
+  hideFX(); thinkBubble.classList.remove('hidden');
+  drawBoard();
+}
+
+function sameCell(a,b){ return a[0]===b[0] && a[1]===b[1]; }
+function cellKey(x,y){ return `${x},${y}`; }
+
+function startDragAtCell(x,y){
+  const ep = GAME.endpoints[cellKey(x,y)];
+  if(!ep) return false;
+  GAME.dragging = {color:ep.color};
+  GAME.paths[ep.color] = [ [x,y] ];
+  playThink(); return true;
+}
+function stepDragToCell(x,y){
+  if(!GAME.dragging || !inBounds(x,y)) return;
+  const color = GAME.dragging.color;
+  const path = GAME.paths[color];
+  const last = path[path.length-1];
+  const dx = Math.abs(x-last[0]), dy = Math.abs(y-last[1]);
+  if(dx+dy !== 1) return;
+
+  if(path.length>=2 && x===path[path.length-2][0] && y===path[path.length-2][1]){
+    const popped = path.pop();
+    if(!GAME.endpoints[cellKey(popped[0], popped[1])]) GAME.occ[popped[1]][popped[0]] = null;
+    drawBoard(); return;
+  }
+
+  const occ = GAME.occ[y][x];
+  const endpointInfo = GAME.endpoints[cellKey(x,y)];
+  if(occ && occ !== color){
+    pulseStatus('Sel sudah dipakai warna lain!', true);
+    sfxWrong(); showDurian(); return;
+  }
+
+  path.push([x,y]);
+  if(!endpointInfo) GAME.occ[y][x] = color;
+  drawBoard();
+
+  if(endpointInfo && endpointInfo.color===color && path.length>1){
+    const firstKey = cellKey(path[0][0], path[0][1]);
+    const lastKey  = cellKey(x,y);
+    if(firstKey !== lastKey){
+      GAME.completedColors.add(color);
+      sfxRight(); bounceAnimal();
+      GAME.dragging = null;
+      checkWinAuto();
+    }
+  }
+}
+function stopDrag(){ GAME.dragging = null; }
+function pulseStatus(msg,isError=false){
+  statusText.textContent = msg; statusText.style.color = isError? '#fca5a5' : '#9ca3af';
+  setTimeout(()=>{statusText.style.color='#9ca3af'}, 650);
+}
+
+function checkWinAuto(){
+  const L = LEVELS[GAME.currentLevel];
+  if(GAME.completedColors.size === L.pairs.length){
+    statusText.textContent = 'Mantap! Semua pasangan terhubung 🎉';
+    showWatermelon(); recordResult(true); btnNext.classList.remove('hidden');
+  }
+}
+function manualCheck(){
+  const L = LEVELS[GAME.currentLevel];
+  if(GAME.completedColors.size === L.pairs.length){
+    statusText.textContent = 'Sudah benar! 🎉';
+    showWatermelon(); recordResult(true); btnNext.classList.remove('hidden');
+  }else{
+    statusText.textContent = 'Belum tepat. Coba lagi!';
+    sfxWrong(); showDurian(); recordResult(false);
+  }
+}
+
+/* ======= HINT: 1 KLIK = SELESAIKAN LEVEL ======= */
+function applyHint(){
+  if(GAME.stars<=0){ pulseStatus('Bintang habis. Tidak bisa pakai hint lagi.', true); sfxWrong(); return; }
+  const L = LEVELS[GAME.currentLevel];
+  L.pairs.forEach(p=>{ GAME.paths[p.color] = p.path.slice(); GAME.completedColors.add(p.color); });
+  GAME.stars = Math.max(0, GAME.stars-1);
+  renderStars(); drawBoard();
+  sfxRight(); sfxRight();
+  statusText.textContent = 'Hint dipakai: Level diselesaikan otomatis ✨';
+  thinkBubble.classList.add('hidden');
+  showWatermelon();
+  recordResult(true);
+  btnNext.classList.remove('hidden');
+}
+
+function resetLevel(){ initLevel(GAME.currentLevel); }
+function nextLevel(){ const next = Math.min(GAME.currentLevel+1, LEVELS.length-1); initLevel(next); btnNext.classList.add('hidden'); }
+
+function recordResult(win){
+  const durationSec = Math.round((Date.now()-GAME.startTime)/1000);
+  const entry = { player: ACTIVE || null, level: GAME.currentLevel+1, win, starsLeft: GAME.stars, durationSec, timestamp: new Date().toISOString() };
+  const idx = GAME.results.findIndex(r => r.level===entry.level && r.player===entry.player);
+  if(idx>=0){ if(win || !GAME.results[idx].win) GAME.results[idx]=entry; } else { GAME.results.push(entry); }
+  if(ACTIVE){
+    const key = `cr_results_${ACTIVE}`;
+    const arr = JSON.parse(localStorage.getItem(key)||'[]');
+    const i2 = arr.findIndex(r => r.level===entry.level);
+    if(i2>=0){ if(win || !arr[i2].win) arr[i2]=entry; } else { arr.push(entry); }
+    localStorage.setItem(key, JSON.stringify(arr));
+  }
+}
+function downloadResults(){
+  if(ACTIVE){
+    const key = `cr_results_${ACTIVE}`;
+    const results = JSON.parse(localStorage.getItem(key)||'[]');
+    const blob = new Blob([JSON.stringify({player: ACTIVE, results}, null, 2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `connect-rope-hasil-${ACTIVE}.json`; document.body.appendChild(a); a.click(); a.remove();
+  }else{
+    const blob = new Blob([JSON.stringify({player: null, results: GAME.results}, null, 2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'connect-rope-hasil.json'; document.body.appendChild(a); a.click(); a.remove();
+  }
+}
+
+function hideFX(){ durianFx.classList.add('hidden'); watermelonFx.classList.add('hidden'); }
+function showDurian(){ hideFX(); durianFx.classList.remove('hidden'); setTimeout(()=>durianFx.classList.add('hidden'), 1200); }
+function showWatermelon(){ hideFX(); watermelonFx.classList.remove('hidden'); animalEl.classList.add('jump'); setTimeout(()=>animalEl.classList.remove('jump'), 850); }
+function bounceAnimal(){ animalEl.classList.add('jump'); setTimeout(()=>animalEl.classList.remove('jump'), 650); }
+function playThink(){ animalEl.classList.add('jump'); setTimeout(()=>animalEl.classList.remove('jump'), 350); }
+
+let AC = null, musicInterval=null;
+function ensureAudio(){ if(!GAME.audioReady){ AC = new (window.AudioContext||window.webkitAudioContext)(); GAME.audioReady = true; } }
+function sfx(beats){
+  if(!GAME.audioReady) return; let t = AC.currentTime;
+  beats.forEach(b=>{
+    const o = AC.createOscillator(), g=AC.createGain();
+    o.type = b.type||'sine'; o.frequency.value = b.freq;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(b.vol||0.2, t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+(b.len||0.12));
+    o.connect(g).connect(AC.destination); o.start(t); o.stop(t+(b.len||0.12));
+    t += (b.wait||0.02);
+  });
+}
+function sfxRight(){ sfx([{freq:660,len:.10,vol:.22,type:'sine'},{freq:880,len:.12,vol:.22,type:'triangle',wait:.02}]); }
+function sfxWrong(){ sfx([{freq:220,len:.18,vol:.25,type:'sawtooth'},{freq:160,len:.18,vol:.20,type:'sawtooth',wait:.02}]); }
+function toggleMusic(){
+  ensureAudio();
+  if(musicInterval){ clearInterval(musicInterval); musicInterval=null; btnMusic.textContent='🔈 Nyalakan Musik'; return; }
+  btnMusic.textContent='🔊 Matikan Musik';
+  const scale=[261.63,329.63,392.00,523.25];
+  musicInterval=setInterval(()=>{
+    if(!GAME.audioReady) return; const t=AC.currentTime, baseVol=0.05;
+    const pad=AC.createOscillator(); pad.type='triangle'; pad.frequency.value=130.81;
+    const pg=AC.createGain(); pg.gain.setValueAtTime(0,t); pg.gain.linearRampToValueAtTime(baseVol,t+.2); pg.gain.linearRampToValueAtTime(0,t+1.6);
+    pad.connect(pg).connect(AC.destination); pad.start(t); pad.stop(t+1.6);
+    scale.forEach((f,i)=>{ const o=AC.createOscillator(); o.type='sine'; o.frequency.value=f;
+      const g=AC.createGain(); g.gain.setValueAtTime(0,t+i*0.15); g.gain.linearRampToValueAtTime(baseVol*1.4,t+i*0.15+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+i*0.15+0.26);
+      o.connect(g).connect(AC.destination); o.start(t+i*0.15); o.stop(t+i*0.15+0.3);
+    });
+  },1750);
+}
+
+function canvasPos(evt){
+  const rect = board.getBoundingClientRect();
+  const x = (evt.touches? evt.touches[0].clientX : evt.clientX) - rect.left;
+  const y = (evt.touches? evt.touches[0].clientY : evt.clientY) - rect.top;
+  const scaleX = board.width / rect.width, scaleY = board.height / rect.height;
+  return {x:x*scaleX, y:y*scaleY};
+}
+function onDown(e){ e.preventDefault(); const p=canvasPos(e), c=toCell(p.x,p.y); if(!inBounds(c.x,c.y)) return; startDragAtCell(c.x,c.y); }
+function onMove(e){ if(!GAME.dragging) return; e.preventDefault(); const p=canvasPos(e), c=toCell(p.x,e.touches?e.touches[0].clientY? p.y:p.y: p.y); const c2=toCell(p.x,p.y); if(!inBounds(c2.x,c2.y)) return; stepDragToCell(c2.x, c2.y); }
+function onUp(e){ stopDrag(); }
+
+function drawExample(){
+  const W=ex.width, H=ex.height; exctx.clearRect(0,0,W,H); exctx.fillStyle='#0b1220'; exctx.fillRect(0,0,W,H);
+  const ox=30, oy=30, cs=60;
+  exctx.strokeStyle='#1f2937'; exctx.lineWidth=2;
+  for(let i=0;i<3;i++){ const y=oy+i*cs; exctx.beginPath(); exctx.moveTo(ox, y); exctx.lineTo(ox+3*cs, y); exctx.stroke(); }
+  for(let j=0;j<4;j++){ const x=ox+j*cs; exctx.beginPath(); exctx.moveTo(x, oy); exctx.lineTo(x, oy+2*cs); exctx.stroke(); }
+  function dot(x,y,c){ exctx.beginPath(); exctx.fillStyle=c; exctx.strokeStyle='#111827'; exctx.lineWidth=3; exctx.arc(ox+x*cs, oy+y*cs, 12, 0, Math.PI*2); exctx.fill(); exctx.stroke(); }
+  dot(0,0,'#ef4444'); dot(3,2,'#ef4444');
+  const path = [[0,0],[1,0],[2,0],[2,1],[3,1],[3,2]];
+  let t=(Date.now()/400)%path.length, i=Math.floor(t);
+  exctx.strokeStyle='#ef4444'; exctx.lineWidth=10; exctx.lineCap='round'; exctx.lineJoin='round';
+  exctx.beginPath();
+  for(let k=0;k<=i;k++){ const P=path[k]; const px=ox+P[0]*cs, py=oy+P[1]*cs; if(k===0) exctx.moveTo(px,py); else exctx.lineTo(px,py); }
+  exctx.stroke();
+  requestAnimationFrame(drawExample);
+}
+
+function loadPlayers(){
+  PLAYERS = JSON.parse(localStorage.getItem('cr_players')||'[]');
+  ACTIVE  = localStorage.getItem('cr_active') || null;
+  if(PLAYERS.length===0){ PLAYERS = ['Pemain 1']; ACTIVE = 'Pemain 1'; persistPlayers(); }
+  if(!ACTIVE || !PLAYERS.includes(ACTIVE)){ ACTIVE = PLAYERS[0]; localStorage.setItem('cr_active', ACTIVE); }
+  refreshPlayerUI();
+}
+function persistPlayers(){ localStorage.setItem('cr_players', JSON.stringify(PLAYERS)); if(ACTIVE) localStorage.setItem('cr_active', ACTIVE); }
+function refreshPlayerUI(){
+  playerSelect.innerHTML='';
+  PLAYERS.forEach(n=>{ const opt=document.createElement('option'); opt.value=n; opt.textContent=n; if(n===ACTIVE) opt.selected=true; playerSelect.appendChild(opt); });
+  playerNameTag.textContent = ACTIVE || '-';
+  playerCountEl.textContent = `Total pemain: ${PLAYERS.length}`;
+}
+function addPlayer(name){ name = (name||'').trim(); if(!name) return; if(!PLAYERS.includes(name)){ PLAYERS.push(name); ACTIVE=name; persistPlayers(); refreshPlayerUI(); } }
+function removePlayer(name){ const i = PLAYERS.indexOf(name); if(i>=0){ PLAYERS.splice(i,1); localStorage.removeItem(`cr_results_${name}`); if(ACTIVE===name) ACTIVE = PLAYERS[0]||null; persistPlayers(); refreshPlayerUI(); } }
+
+function loadChat(){ return JSON.parse(localStorage.getItem('cr_chat')||'[]'); }
+function saveChat(arr){ localStorage.setItem('cr_chat', JSON.stringify(arr.slice(-1000))); }
+function renderChat(){
+  const arr = loadChat();
+  chatMessages.innerHTML='';
+  arr.forEach(msg=>{
+    const div=document.createElement('div'); div.className='bubble ' + (msg.by===ACTIVE?'me':'other');
+    const meta=document.createElement('div'); meta.className='meta';
+    const time=new Date(msg.ts).toLocaleTimeString(); meta.textContent = `${msg.by} • ${time}`;
+    const text=document.createElement('div'); text.textContent = msg.text;
+    div.appendChild(meta); div.appendChild(text); chatMessages.appendChild(div);
+  });
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+function sendChat(text){ text=(text||'').trim(); if(!text) return; const arr=loadChat(); arr.push({by: ACTIVE||'Anonim', text, ts: Date.now()}); saveChat(arr); renderChat(); }
+window.addEventListener('storage', (e)=>{ if(e.key==='cr_chat') renderChat(); });
+
+function saveNameSingle(){ const n=(playerNameInput.value||'').trim(); if(n.length){ addPlayer(n); pulseStatus(`Halo, ${n}! Selamat bermain 😄`); } }
+
+function boot(){
+  loadPlayers();
+  drawExample();
+  initLevel(0);
+
+  btnStart.addEventListener('click', ()=>showPage('profile'));
+  btnSkip.addEventListener('click', ()=>showPage('game'));
+  btnGoHome.addEventListener('click', ()=>showPage('home'));
+  btnGoGame.addEventListener('click', ()=>showPage('game'));
+
+  btnSaveProfile.addEventListener('click', ()=>{ saveNameSingle(); });
+  btnUseSelected.addEventListener('click', ()=>{ ACTIVE = playerSelect.value; persistPlayers(); refreshPlayerUI(); pulseStatus(`Pemain aktif: ${ACTIVE}`); });
+  btnDeleteSelected.addEventListener('click', ()=>{ const name = playerSelect.value; if(confirm(`Hapus pemain "${name}" beserta hasilnya?`)){ removePlayer(name); } });
+
+  btnHint.addEventListener('click', applyHint);
+  btnReset.addEventListener('click', resetLevel);
+  btnCheck.addEventListener('click', manualCheck);
+  btnNext.addEventListener('click', nextLevel);
+  btnDownload.addEventListener('click', downloadResults);
+  btnMusic.addEventListener('click', toggleMusic);
+
+  board.addEventListener('mousedown', onDown);
+  board.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+  board.addEventListener('touchstart', onDown, {passive:false});
+  board.addEventListener('touchmove', onMove, {passive:false});
+  window.addEventListener('touchend', onUp);
+
+  renderChat();
+  btnSendChat.addEventListener('click', ()=>{ sendChat(chatText.value); chatText.value=''; chatText.focus(); });
+  chatText.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ sendChat(chatText.value); chatText.value=''; } });
+  btnClearChat.addEventListener('click', ()=>{ if(confirm('Hapus semua pesan chat di perangkat ini?')){ saveChat([]); renderChat(); } });
+
+  setInterval(()=>{ animalEl.style.transform = `translateX(${Math.sin(Date.now()/900)*6}px)`; }, 90);
+}
+boot();
+</script>
+</body>
+</html>
